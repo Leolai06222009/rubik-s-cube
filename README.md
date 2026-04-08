@@ -1,164 +1,328 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>3D 魔術方塊 - 互動版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3x3x3 魔術方塊</title>
     <style>
-        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; overflow: hidden; }
-        #ui { position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; }
-        button { margin: 5px; padding: 8px 12px; cursor: pointer; background: #444; color: white; border: 1px solid #666; border-radius: 4px; }
+        body { margin: 0; overflow: hidden; background-color: #222; font-family: sans-serif; }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            z-index: 100;
+            pointer-events: none;
+        }
+        .controls {
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #444;
+            color: white;
+            border: 1px solid #666;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
         button:hover { background: #666; }
-        .status { margin-top: 10px; color: #0f0; font-weight: bold; }
-        #info { position: absolute; bottom: 10px; width: 100%; text-align: center; pointer-events: none; color: #888; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #0f0;
+            font-size: 48px;
+            font-weight: bold;
+            display: none;
+            text-shadow: 0 0 10px rgba(0,255,0,0.5);
+            pointer-events: none;
+            z-index: 200;
+        }
+        .instruction {
+            font-size: 14px;
+            margin-top: 10px;
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <h3>控制面板</h3>
-    <div>
-        <strong>旋轉軸：</strong><br>
-        X 軸 (列): <button onclick="rotateLayer('x', 0)">左層</button><button onclick="rotateLayer('x', 1)">中層</button><button onclick="rotateLayer('x', 2)">右層</button><br>
-        Y 軸 (行): <button onclick="rotateLayer('y', 0)">下層</button><button onclick="rotateLayer('y', 1)">中層</button><button onclick="rotateLayer('y', 2)">上層</button><br>
-        Z 軸: <button onclick="rotateLayer('z', 0)">前層</button><button onclick="rotateLayer('z', 1)">中層</button><button onclick="rotateLayer('z', 2)">後層</button>
+    <h1>3x3x3 魔術方塊</h1>
+    <div class="controls">
+        <button id="scrambleBtn">打亂方塊 (Scramble)</button>
+        <div style="margin-top:10px;">
+            <div>旋轉控制 (Rotations):</div>
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top:5px;">
+                <button onclick="rotate('x', 0, 1)">L</button>
+                <button onclick="rotate('x', 1, 1)">M</button>
+                <button onclick="rotate('x', 2, 1)">R'</button>
+                <button onclick="rotate('x', 0, -1)">L'</button>
+                <button onclick="rotate('x', 1, -1)">M'</button>
+                <button onclick="rotate('x', 2, -1)">R</button>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top:5px;">
+                <button onclick="rotate('y', 2, 1)">U</button>
+                <button onclick="rotate('y', 1, 1)">E</button>
+                <button onclick="rotate('y', 0, 1)">D'</button>
+                <button onclick="rotate('y', 2, -1)">U'</button>
+                <button onclick="rotate('y', 1, -1)">E'</button>
+                <button onclick="rotate('y', 0, -1)">D</button>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top:5px;">
+                <button onclick="rotate('z', 2, 1)">F</button>
+                <button onclick="rotate('z', 1, 1)">S</button>
+                <button onclick="rotate('z', 0, 1)">B'</button>
+                <button onclick="rotate('z', 2, -1)">F'</button>
+                <button onclick="rotate('z', 1, -1)">S'</button>
+                <button onclick="rotate('z', 0, -1)">B</button>
+            </div>
+        </div>
+        <div class="instruction">使用滑鼠拖曳來旋轉視角</div>
     </div>
-    <div id="win-msg" class="status"></div>
-    <button onclick="shuffleCube()" style="background: #28a745;">重新打亂</button>
 </div>
 
-<div id="info">滑鼠左鍵拖拽旋轉視角</div>
+<div id="message">恭喜通關！</div>
 
-<script type="importmap">
-    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
-<script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+<script>
+    // --- Setup Scene ---
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(5, 5, 10);
 
-    let scene, camera, renderer, controls;
-    let cubies = [];
-    const step = 105; // 方塊間距
-    let isRotating = false;
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
 
-    init();
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
 
-    function init() {
-        scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(5, 5, 10);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight.position.set(10, 20, 10);
+    scene.add(directionalLight);
 
-        controls = new OrbitControls(camera, renderer.domElement);
+    // --- Cube Constants ---
+    const COLORS = {
+        white:  0xffffff, // Up
+        yellow: 0xffff00, // Down
+        red:    0xff0000, // Left
+        orange: 0xffa500, // Right
+        green:  0x00ff00, // Front
+        blue:   0x0000ff  // Back
+    };
+
+    // --- Create Cubelets ---
+    const cubelets = [];
+    const size = 1;
+    const gap = 0.05;
+
+    function createCubelet(x, y, z) {
+        const geometry = new THREE.BoxGeometry(size, size, size);
         
-        createCube();
-        animate();
+        // Define materials for each side
+        // order: pos-x, neg-x, pos-y, neg-y, pos-z, neg-z
+        // R (orange), L (red), U (white), D (yellow), F (green), B (blue)
+        const materials = [
+            new THREE.MeshLambertMaterial({ color: (x === 1)  ? COLORS.orange : 0x111111 }),
+            new THREE.MeshLambertMaterial({ color: (x === -1) ? COLORS.red    : 0x111111 }),
+            new THREE.MeshLambertMaterial({ color: (y === 1)  ? COLORS.white  : 0x111111 }),
+            new THREE.MeshLambertMaterial({ color: (y === -1) ? COLORS.yellow : 0x111111 }),
+            new THREE.MeshLambertMaterial({ color: (z === 1)  ? COLORS.green  : 0x111111 }),
+            new THREE.MeshLambertMaterial({ color: (z === -1) ? COLORS.blue   : 0x111111 })
+        ];
+
+        const cubelet = new THREE.Mesh(geometry, materials);
+        cubelet.position.set(x * (size + gap), y * (size + gap), z * (size + gap));
         
-        // 初始動畫打亂
-        setTimeout(shuffleCube, 1000);
+        // Custom property to track original face colors for win detection
+        // We'll use the final orientation instead.
+        
+        scene.add(cubelet);
+        cubelets.push(cubelet);
     }
 
-    function createCube() {
-        const colors = [0xffffff, 0xffff00, 0xffa500, 0xff0000, 0x00ff00, 0x0000ff]; // R, L, U, D, F, B
-        const materials = colors.map(c => new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }));
-        
-        // 清除舊方塊
-        cubies.forEach(c => scene.remove(c));
-        cubies = [];
-
-        for (let x = 0; x < 3; x++) {
-            for (let y = 0; y < 3; y++) {
-                for (let z = 0; z < 3; z++) {
-                    const geometry = new THREE.BoxGeometry(0.9, 0.9, 0.9);
-                    const mesh = new THREE.Mesh(geometry, materials);
-                    // 設置初始邏輯位置 (0,1,2)
-                    mesh.position.set(x - 1, y - 1, z - 1);
-                    scene.add(mesh);
-                    cubies.push(mesh);
-                }
+    for (let x = -1; x <= 1; x++) {
+        for (let y = -1; y <= 1; y++) {
+            for (let z = -1; z <= 1; z++) {
+                if (x === 0 && y === 0 && z === 0) continue; // Hollow center
+                createCubelet(x, y, z);
             }
         }
     }
 
-    // 核心旋轉邏輯
-    window.rotateLayer = function(axis, layerIndex) {
+    // --- Rotation Logic ---
+    let isRotating = false;
+
+    /**
+     * @param {string} axis - 'x', 'y', or 'z'
+     * @param {number} layerIndex - -1, 0, or 1 (mapped from 0, 1, 2)
+     * @param {number} direction - 1 (CW) or -1 (CCW)
+     */
+    function rotate(axis, layerIndex, direction, speed = 15) {
         if (isRotating) return;
         isRotating = true;
 
+        // Map layer index (0,1,2) to internal coordinates (-1,0,1)
+        const targetLayer = layerIndex - 1;
+        
         const group = new THREE.Group();
         scene.add(group);
 
-        const targetLayer = cubies.filter(c => {
-            const pos = new THREE.Vector3();
-            c.getWorldPosition(pos);
-            const val = Math.round(pos[axis] + 1);
-            return val === layerIndex;
+        const movingCubelets = [];
+        const threshold = 0.1;
+
+        cubelets.forEach(c => {
+            // Check position in world space
+            const worldPos = new THREE.Vector3();
+            c.getWorldPosition(worldPos);
+            
+            let match = false;
+            if (axis === 'x' && Math.abs(worldPos.x / (size + gap) - targetLayer) < threshold) match = true;
+            if (axis === 'y' && Math.abs(worldPos.y / (size + gap) - targetLayer) < threshold) match = true;
+            if (axis === 'z' && Math.abs(worldPos.z / (size + gap) - targetLayer) < threshold) match = true;
+
+            if (match) {
+                movingCubelets.push(c);
+            }
         });
 
-        targetLayer.forEach(c => group.attach(c));
+        movingCubelets.forEach(c => {
+            group.attach(c);
+        });
 
-        const rotateAxis = new THREE.Vector3();
-        rotateAxis[axis] = 1;
-        
-        let progress = 0;
-        const speed = 0.1;
-        
-        function animateRotate() {
-            if (progress < Math.PI / 2) {
-                group.rotateOnAxis(rotateAxis, speed);
-                progress += speed;
-                requestAnimationFrame(animateRotate);
+        const targetRotation = (Math.PI / 2) * direction;
+        let currentRotation = 0;
+        const step = (targetRotation / speed);
+
+        function animateRotation() {
+            if (Math.abs(currentRotation) < Math.abs(targetRotation)) {
+                group.rotation[axis] += step;
+                currentRotation += step;
+                requestAnimationFrame(animateRotation);
             } else {
-                // 修正最終角度
-                group.rotation[axis] = Math.PI / 2;
+                // Snap to final rotation
+                group.rotation[axis] = targetRotation;
                 
-                // 拆解 Group 回到 Scene
-                const children = [...group.children];
-                children.forEach(c => {
-                    const pos = new THREE.Vector3();
-                    const quat = new THREE.Quaternion();
-                    c.getWorldPosition(pos);
-                    c.getWorldQuaternion(quat);
+                // Finalize positions
+                const toUngroup = [...movingCubelets];
+                toUngroup.forEach(c => {
                     scene.attach(c);
-                    // 物理修正座標
-                    c.position.set(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z));
                 });
                 
                 scene.remove(group);
                 isRotating = false;
-                checkWin();
+                checkSolved();
             }
         }
-        animateRotate();
+
+        animateRotation();
     }
 
-    window.shuffleCube = async function() {
-        document.getElementById('win-msg').innerText = "打亂中...";
+    // --- Scramble ---
+    const scrambleBtn = document.getElementById('scrambleBtn');
+    scrambleBtn.addEventListener('click', async () => {
+        if (isRotating) return;
+        scrambleBtn.disabled = true;
+        document.getElementById('message').style.display = 'none';
+
+        const moves = 20;
         const axes = ['x', 'y', 'z'];
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < moves; i++) {
             const axis = axes[Math.floor(Math.random() * 3)];
             const layer = Math.floor(Math.random() * 3);
-            rotateLayer(axis, layer);
-            await new Promise(r => setTimeout(r, 300));
+            const dir = Math.random() > 0.5 ? 1 : -1;
+            
+            rotate(axis, layer, dir, 5); // Faster rotation for scramble
+            
+            // Wait for rotation to finish
+            while (isRotating) {
+                await new Promise(r => setTimeout(r, 10));
+            }
         }
-        document.getElementById('win-msg').innerText = "開始挑戰！";
+        scrambleBtn.disabled = false;
+    });
+
+    // --- Win Detection ---
+    function checkSolved() {
+        // A simple way to check if solved:
+        // Each cubelet should have its rotation close to a multiple of 90 degrees
+        // and aligned such that all outward stickers match.
+        // Even simpler for this implementation: check if the normals of the colored faces
+        // are all aligned correctly in world space.
+        
+        const faces = [
+            { normal: new THREE.Vector3(1, 0, 0), color: COLORS.orange },
+            { normal: new THREE.Vector3(-1, 0, 0), color: COLORS.red },
+            { normal: new THREE.Vector3(0, 1, 0), color: COLORS.white },
+            { normal: new THREE.Vector3(0, -1, 0), color: COLORS.yellow },
+            { normal: new THREE.Vector3(0, 0, 1), color: COLORS.green },
+            { normal: new THREE.Vector3(0, 0, -1), color: COLORS.blue }
+        ];
+
+        let allSolved = true;
+
+        for (const face of faces) {
+            // Find all cubelets that are on this face in current world space
+            const faceCubelets = cubelets.filter(c => {
+                const worldPos = new THREE.Vector3();
+                c.getWorldPosition(worldPos);
+                const dot = worldPos.dot(face.normal);
+                return dot > (size + gap) * 0.9;
+            });
+
+            // For each cubelet on this face, check if the material facing this direction has the correct color
+            for (const c of faceCubelets) {
+                // We need to check which of its 6 faces is currently pointing towards `face.normal`
+                let materialFound = false;
+                
+                // Get world normals of the cubelet faces
+                // Index 0: +x, 1: -x, 2: +y, 3: -y, 4: +z, 5: -z
+                const localNormals = [
+                    new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
+                    new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -1, 0),
+                    new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)
+                ];
+
+                for (let i = 0; i < 6; i++) {
+                    const worldNormal = localNormals[i].clone().applyQuaternion(c.quaternion);
+                    if (worldNormal.dot(face.normal) > 0.9) {
+                        // This is the material facing our face direction
+                        if (c.material[i].color.getHex() !== face.color) {
+                            allSolved = false;
+                            break;
+                        }
+                        materialFound = true;
+                        break;
+                    }
+                }
+                if (!allSolved) break;
+            }
+            if (!allSolved) break;
+        }
+
+        if (allSolved) {
+            document.getElementById('message').style.display = 'block';
+        }
     }
 
-    function checkWin() {
-        // 簡化檢測：檢查所有方塊的方向是否一致
-        const firstQuat = cubies[0].quaternion;
-        const won = cubies.every(c => c.quaternion.equals(firstQuat));
-        if (won) {
-            document.getElementById('win-msg').innerText = "🎉 恭喜通關！";
-            document.getElementById('win-msg').style.color = "#ffff00";
-        }
-    }
-
+    // --- Animation Loop ---
     function animate() {
         requestAnimationFrame(animate);
+        controls.update();
         renderer.render(scene, camera);
     }
 
@@ -167,6 +331,9 @@
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
+
+    animate();
 </script>
+
 </body>
 </html>
