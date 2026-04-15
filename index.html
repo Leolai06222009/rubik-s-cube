@@ -1,316 +1,271 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3x3x3 魔術方塊 - 互動指示版</title>
+    <title>Easy Game 2.0</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body { margin: 0; overflow: hidden; background-color: #1a1a1a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #ui {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: white;
-            z-index: 100;
-            pointer-events: none;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 20px;
-            border-radius: 10px;
-            backdrop-filter: blur(5px);
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #282c34;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
         }
-        .controls {
-            pointer-events: auto;
+
+        .container {
+            text-align: center;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100vh;
+            position: relative;
         }
-        .btn-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
+
+        .game-title-area {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
         }
-        button {
-            padding: 8px;
-            font-size: 14px;
+
+        .main-title {
+            font-size: 8em;
+            margin-bottom: 20px;
+            color: #61dafb;
+            text-shadow: 0 0 10px rgba(97, 218, 251, 0.7);
+            position: relative;
+            z-index: 10;
             cursor: pointer;
-            background: #333;
-            color: white;
-            border: 1px solid #555;
-            border-radius: 4px;
-            transition: all 0.2s;
         }
-        button:hover { background: #007bff; border-color: #00a2ff; }
-        button:disabled { opacity: 0.3; cursor: not-allowed; }
-        .label { font-size: 12px; color: #aaa; margin-bottom: 5px; font-weight: bold; }
-        #message {
+
+        .start-game-hidden {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            color: #0f0;
-            font-size: 48px;
-            font-weight: bold;
-            display: none;
-            text-shadow: 0 0 20px rgba(0,255,0,0.7);
+            transform: translate(-50%, -50%) scale(0.5);
+            opacity: 0;
             pointer-events: none;
-            z-index: 200;
+            transition: all 0.5s ease-in-out;
+            z-index: 5;
         }
-        .hint { font-size: 12px; color: #888; margin-top: 10px; line-height: 1.4; }
+
+        .start-game-hidden.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
+            z-index: 15;
+        }
+
+        .start-game-hidden button {
+            padding: 15px 30px;
+            font-size: 2em;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .start-game-hidden button:hover {
+            background-color: #45a049;
+        }
+
+        .settings-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 2.5em;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            z-index: 20;
+        }
+
+        .settings-icon:hover {
+            color: #61dafb;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            display: none;
+        }
+
+        .overlay-content {
+            background-color: #3a3f47;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .overlay-content h2 {
+            color: #61dafb;
+            margin-top: 0;
+            font-size: 2em;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.2em;
+        }
+
+        .setting-item input[type="range"] {
+            width: 70%;
+            -webkit-appearance: none;
+            height: 8px;
+            background: #555;
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+
+        .setting-item input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #61dafb;
+            cursor: pointer;
+        }
+
+        .setting-item input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #61dafb;
+            cursor: pointer;
+        }
+
+        .overlay-button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .overlay-button:hover {
+            background-color: #0056b3;
+        }
+
+        #helpOverlay .overlay-content p {
+            font-size: 1.1em;
+            line-height: 1.5;
+            color: #ccc;
+        }
     </style>
 </head>
 <body>
-
-<div id="ui">
-    <h2 style="margin: 0 0 15px 0; font-size: 20px;">魔術方塊控制台</h2>
-    <div class="controls">
-        <button id="scrambleBtn" style="background: #444; margin-bottom: 10px;">打亂方塊 (Scramble)</button>
-        
-        <div>
-            <div class="label">X-AXIS (L/M/R)</div>
-            <div class="btn-grid">
-                <button class="rot-btn" data-axis="x" data-layer="0" data-dir="1">L</button>
-                <button class="rot-btn" data-axis="x" data-layer="1" data-dir="1">M</button>
-                <button class="rot-btn" data-axis="x" data-layer="2" data-dir="1">R'</button>
-                <button class="rot-btn" data-axis="x" data-layer="0" data-dir="-1">L'</button>
-                <button class="rot-btn" data-axis="x" data-layer="1" data-dir="-1">M'</button>
-                <button class="rot-btn" data-axis="x" data-layer="2" data-dir="-1">R</button>
+    <div class="container">
+        <div class="game-title-area">
+            <h1 id="mainTitle" class="main-title">easy game 2.0</h1>
+            <div id="startGameButton" class="start-game-hidden">
+                <button>開始遊戲</button>
             </div>
         </div>
 
-        <div>
-            <div class="label">Y-AXIS (U/E/D)</div>
-            <div class="btn-grid">
-                <button class="rot-btn" data-axis="y" data-layer="2" data-dir="1">U</button>
-                <button class="rot-btn" data-axis="y" data-layer="1" data-dir="1">E</button>
-                <button class="rot-btn" data-axis="y" data-layer="0" data-dir="1">D'</button>
-                <button class="rot-btn" data-axis="y" data-layer="2" data-dir="-1">U'</button>
-                <button class="rot-btn" data-axis="y" data-layer="1" data-dir="-1">E'</button>
-                <button class="rot-btn" data-axis="y" data-layer="0" data-dir="-1">D</button>
+        <button id="settingsIcon" class="settings-icon">
+            <i class="fas fa-cog"></i>
+        </button>
+
+        <!-- Settings Overlay -->
+        <div id="settingsOverlay" class="overlay">
+            <div class="overlay-content">
+                <h2>設定</h2>
+                <div class="setting-item">
+                    <span>音量大小:</span>
+                    <input type="range" id="volumeControl" min="0" max="100" value="100">
+                    <span id="volumeValue">100</span>
+                </div>
+                <button id="helpButton" class="overlay-button">幫助</button>
+                <button id="backFromSettings" class="overlay-button">返回上一頁</button>
             </div>
         </div>
 
-        <div>
-            <div class="label">Z-AXIS (F/S/B)</div>
-            <div class="btn-grid">
-                <button class="rot-btn" data-axis="z" data-layer="2" data-dir="1">F</button>
-                <button class="rot-btn" data-axis="z" data-layer="1" data-dir="1">S</button>
-                <button class="rot-btn" data-axis="z" data-layer="0" data-dir="1">B'</button>
-                <button class="rot-btn" data-axis="z" data-layer="2" data-dir="-1">F'</button>
-                <button class="rot-btn" data-axis="z" data-layer="1" data-dir="-1">S'</button>
-                <button class="rot-btn" data-axis="z" data-layer="0" data-dir="-1">B</button>
+        <!-- Help Overlay -->
+        <div id="helpOverlay" class="overlay">
+            <div class="overlay-content">
+                <h2>幫助</h2>
+                <p>提示: 開始按鈕藏在easy game之後</p>
+                <button id="backFromHelp" class="overlay-button">返回上一頁</button>
             </div>
-        </div>
-
-        <div class="hint">
-            • 滑鼠懸停按鈕查看旋轉方向<br>
-            • 滑鼠拖曳旋轉視角
         </div>
     </div>
-</div>
 
-<div id="message">SOLVED!</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const mainTitle = document.getElementById('mainTitle');
+            const startGameButton = document.getElementById('startGameButton');
+            const settingsIcon = document.getElementById('settingsIcon');
+            const settingsOverlay = document.getElementById('settingsOverlay');
+            const backFromSettings = document.getElementById('backFromSettings');
+            const volumeControl = document.getElementById('volumeControl');
+            const volumeValue = document.getElementById('volumeValue');
+            const helpButton = document.getElementById('helpButton');
+            const helpOverlay = document.getElementById('helpOverlay');
+            const backFromHelp = document.getElementById('backFromHelp');
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-
-<script>
-    // --- 初始化場景 ---
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(6, 6, 12);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    document.body.appendChild(renderer.domElement);
-
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-    const light = new THREE.DirectionalLight(0xffffff, 0.5);
-    light.position.set(10, 20, 10);
-    scene.add(light);
-
-    // --- 方塊參數 ---
-    const COLORS = { white: 0xffffff, yellow: 0xffff00, red: 0xff0000, orange: 0xffa500, green: 0x00ff00, blue: 0x0000ff };
-    const size = 1, gap = 0.05, unit = size + gap;
-    const cubelets = [];
-
-    function createCube(x, y, z) {
-        const geometry = new THREE.BoxGeometry(size, size, size);
-        const materials = [
-            new THREE.MeshLambertMaterial({ color: (x === 1) ? COLORS.orange : 0x111111 }),
-            new THREE.MeshLambertMaterial({ color: (x === -1)? COLORS.red    : 0x111111 }),
-            new THREE.MeshLambertMaterial({ color: (y === 1) ? COLORS.white  : 0x111111 }),
-            new THREE.MeshLambertMaterial({ color: (y === -1)? COLORS.yellow : 0x111111 }),
-            new THREE.MeshLambertMaterial({ color: (z === 1) ? COLORS.green  : 0x111111 }),
-            new THREE.MeshLambertMaterial({ color: (z === -1)? COLORS.blue   : 0x111111 })
-        ];
-        const mesh = new THREE.Mesh(geometry, materials);
-        mesh.position.set(x * unit, y * unit, z * unit);
-        scene.add(mesh);
-        cubelets.push(mesh);
-    }
-
-    for(let x=-1; x<=1; x++) for(let y=-1; y<=1; y++) for(let z=-1; z<=1; z++) {
-        if(x===0 && y===0 && z===0) continue;
-        createCube(x,y,z);
-    }
-
-    // --- 製作箭頭指示器 (Arrow Indicator) ---
-    const arrowGroup = new THREE.Group();
-    const arcRadius = unit * 1.6;
-    
-    // 弧線部分 (四分之一圓)
-    const torusGeo = new THREE.TorusGeometry(arcRadius, 0.04, 8, 40, Math.PI / 2);
-    const arrowMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.7 });
-    const arc = new THREE.Mesh(torusGeo, arrowMat);
-    arc.rotation.z = Math.PI / 2;
-    arrowGroup.add(arc);
-
-    // 箭頭尖端
-    const coneGeo = new THREE.ConeGeometry(0.15, 0.4, 16);
-    const cone = new THREE.Mesh(coneGeo, arrowMat);
-    cone.position.set(0, arcRadius, 0);
-    cone.rotation.z = Math.PI / 2;
-    arrowGroup.add(cone);
-
-    arrowGroup.visible = false;
-    scene.add(arrowGroup);
-
-    // --- 旋轉邏輯 ---
-    let isRotating = false;
-
-    function rotate(axis, layer, dir, speed = 15) {
-        if (isRotating) return;
-        isRotating = true;
-        const targetLayer = layer - 1;
-        const group = new THREE.Group();
-        scene.add(group);
-
-        const moving = cubelets.filter(c => {
-            const p = new THREE.Vector3();
-            c.getWorldPosition(p);
-            const val = axis === 'x' ? p.x : (axis === 'y' ? p.y : p.z);
-            return Math.abs(val / unit - targetLayer) < 0.1;
-        });
-
-        moving.forEach(c => group.attach(c));
-        const targetRot = (Math.PI / 2) * dir;
-        let currentRot = 0;
-        const step = targetRot / speed;
-
-        function anim() {
-            if (Math.abs(currentRot) < Math.abs(targetRot)) {
-                group.rotation[axis] += step;
-                currentRot += step;
-                requestAnimationFrame(anim);
-            } else {
-                group.rotation[axis] = targetRot;
-                [...moving].forEach(c => scene.attach(c));
-                scene.remove(group);
-                isRotating = false;
-                checkSolved();
-            }
-        }
-        anim();
-    }
-
-    // --- UI 事件綁定 (懸停指示) ---
-    document.querySelectorAll('.rot-btn').forEach(btn => {
-        const { axis, layer, dir } = btn.dataset;
-        const l = parseInt(layer), d = parseInt(dir);
-
-        btn.onmouseenter = () => {
-            if (isRotating) return;
-            arrowGroup.rotation.set(0, 0, 0);
-            arrowGroup.position.set(0, 0, 0);
-
-            if (axis === 'x') {
-                arrowGroup.rotation.y = Math.PI / 2;
-                arrowGroup.position.x = (l - 1) * unit;
-            } else if (axis === 'y') {
-                arrowGroup.rotation.x = Math.PI / 2;
-                arrowGroup.position.y = (l - 1) * unit;
-            } else {
-                arrowGroup.position.z = (l - 1) * unit;
-            }
-
-            // 處理反向箭頭
-            if (d === -1) {
-                if (axis === 'x') arrowGroup.rotation.z += Math.PI;
-                if (axis === 'y') arrowGroup.rotation.x += Math.PI;
-                if (axis === 'z') arrowGroup.rotation.y += Math.PI;
-            }
-
-            arrowGroup.visible = true;
-        };
-
-        btn.onmouseleave = () => { arrowGroup.visible = false; };
-        btn.onclick = () => { arrowGroup.visible = false; rotate(axis, l, d); };
-    });
-
-    // --- 打亂方塊 ---
-    document.getElementById('scrambleBtn').onclick = async function() {
-        if (isRotating) return;
-        this.disabled = true;
-        document.getElementById('message').style.display = 'none';
-        for (let i = 0; i < 15; i++) {
-            const a = ['x', 'y', 'z'][Math.floor(Math.random() * 3)];
-            const l = Math.floor(Math.random() * 3);
-            const d = Math.random() > 0.5 ? 1 : -1;
-            rotate(a, l, d, 5);
-            while (isRotating) await new Promise(r => setTimeout(r, 10));
-        }
-        this.disabled = false;
-    };
-
-    // --- 勝負判定 ---
-    function checkSolved() {
-        const faces = [
-            { n: new THREE.Vector3(1,0,0), c: COLORS.orange }, { n: new THREE.Vector3(-1,0,0), c: COLORS.red },
-            { n: new THREE.Vector3(0,1,0), c: COLORS.white }, { n: new THREE.Vector3(0,-1,0), c: COLORS.yellow },
-            { n: new THREE.Vector3(0,0,1), c: COLORS.green }, { n: new THREE.Vector3(0,0,-1), c: COLORS.blue }
-        ];
-        let solved = true;
-        for (const f of faces) {
-            const cubes = cubelets.filter(c => {
-                const p = new THREE.Vector3();
-                c.getWorldPosition(p);
-                return p.dot(f.n) > unit * 0.9;
+            mainTitle.addEventListener('click', () => {
+                startGameButton.classList.add('active');
             });
-            for (const c of cubes) {
-                const locals = [new THREE.Vector3(1,0,0), new THREE.Vector3(-1,0,0), new THREE.Vector3(0,1,0), new THREE.Vector3(0,-1,0), new THREE.Vector3(0,0,1), new THREE.Vector3(0,0,-1)];
-                let match = false;
-                for (let i=0; i<6; i++) {
-                    const worldN = locals[i].clone().applyQuaternion(c.quaternion);
-                    if (worldN.dot(f.n) > 0.9) {
-                        if (c.material[i].color.getHex() !== f.c) solved = false;
-                        match = true; break;
-                    }
-                }
-                if (!solved) break;
-            }
-            if (!solved) break;
-        }
-        if (solved) document.getElementById('message').style.display = 'block';
-    }
 
-    function animate() {
-        requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-    }
+            settingsIcon.addEventListener('click', () => {
+                settingsOverlay.style.display = 'flex';
+            });
 
-    window.onresize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    };
+            backFromSettings.addEventListener('click', () => {
+                settingsOverlay.style.display = 'none';
+            });
 
-    animate();
-</script>
+            volumeControl.addEventListener('input', (event) => {
+                volumeValue.textContent = event.target.value;
+                console.log('Volume set to:', event.target.value);
+            });
 
+            helpButton.addEventListener('click', () => {
+                settingsOverlay.style.display = 'none';
+                helpOverlay.style.display = 'flex';
+            });
+
+            backFromHelp.addEventListener('click', () => {
+                helpOverlay.style.display = 'none';
+                settingsOverlay.style.display = 'flex';
+            });
+        });
+    </script>
 </body>
 </html>
