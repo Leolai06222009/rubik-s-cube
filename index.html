@@ -1,13 +1,9 @@
-import os
-
-# Define the HTML content for the puzzle game "Lumina Link"
-html_content = """
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumina Link - 光影接連</title>
+    <title>Lumina Link - 輕鬆入門版</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -16,474 +12,157 @@ html_content = """
             --text-color: #f8fafc;
             --accent-color: #38bdf8;
             --red: #ef4444;
-            --green: #22c55e;
-            --blue: #3b82f6;
-            --yellow: #eab308;
-            --magenta: #d946ef;
-            --cyan: #06b6d4;
-            --white: #ffffff;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
-            margin: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            overflow: hidden;
-        }
-
-        #game-container {
-            text-align: center;
-            max-width: 600px;
-            width: 95%;
-        }
-
-        header {
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            font-size: 2.5rem;
             margin: 0;
-            background: linear-gradient(45deg, var(--red), var(--green), var(--blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
-        }
-
-        #level-info {
-            font-size: 1.2rem;
-            margin-top: 5px;
-            color: var(--accent-color);
         }
 
         #grid {
             display: grid;
-            gap: 10px;
+            gap: 12px;
             background-color: var(--border-color);
-            padding: 10px;
-            border-radius: 12px;
-            margin: 0 auto;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            position: relative;
+            padding: 15px;
+            border-radius: 16px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
 
         .tile {
             width: 80px;
             height: 80px;
             background-color: var(--tile-color);
-            border-radius: 8px;
+            border-radius: 10px;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            transition: transform 0.2s, background-color 0.3s;
-            position: relative;
-            overflow: hidden;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .tile:hover {
-            background-color: #2d3e50;
+        .tile:hover { background-color: #2d3e50; }
+
+        .pipe-line {
+            stroke: #475569;
+            stroke-width: 14;
+            fill: none;
+            stroke-linecap: round;
         }
 
-        .tile.source::after {
-            content: '●';
-            font-size: 24px;
-        }
-
-        .tile.target {
-            border: 3px solid transparent;
-        }
-
-        /* SVG Pipes */
-        .pipe {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-
-        .controls {
-            margin-top: 30px;
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 1rem;
-            background-color: var(--accent-color);
-            border: none;
-            border-radius: 6px;
-            color: var(--bg-color);
-            font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        button:hover {
-            opacity: 0.9;
+        .light-path {
+            stroke-width: 8;
+            fill: none;
+            stroke-linecap: round;
+            filter: blur(1px);
         }
 
         #message {
-            margin-top: 20px;
+            margin: 20px 0;
+            font-size: 1.2rem;
+            height: 30px;
+            color: #fbbf24;
             font-weight: bold;
-            height: 24px;
         }
 
-        .instructions {
-            margin-top: 20px;
-            font-size: 0.9rem;
-            color: #94a3b8;
-            background: rgba(255,255,255,0.05);
-            padding: 15px;
+        .btn {
+            padding: 12px 24px;
+            background: var(--accent-color);
+            border: none;
             border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
         }
-
-        /* Win Animation */
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        .solved .tile {
-            animation: pulse 0.5s ease-in-out;
-        }
-
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <header>
-        <h1>LUMINA LINK</h1>
-        <div id="level-info">Level 1: 初試光芒</div>
-    </header>
-
+    <h1>LUMINA LINK</h1>
+    <p>Level 1: 簡單直線 (點擊方塊使其變水平)</p>
+    
+    <div id="message"></div>
     <div id="grid"></div>
 
-    <div id="message"></div>
-
-    <div class="controls">
-        <button onclick="resetLevel()">重置關卡</button>
-        <button id="next-btn" style="display:none;" onclick="nextLevel()">下一關</button>
+    <div style="margin-top: 20px;">
+        <button class="btn" onclick="location.reload()">重新開始</button>
     </div>
-
-    <div class="instructions">
-        點擊方塊旋轉光路。將<strong>彩色光源</strong>引導至<strong>目標點</strong>。<br>
-        紅+綠=黃 | 紅+藍=洋紅 | 綠+藍=青 | 三色=白
-    </div>
-</div>
 
 <script>
-    const COLORS = {
-        NONE: 'transparent',
-        RED: '#ef4444',
-        GREEN: '#22c55e',
-        BLUE: '#3b82f6',
-        YELLOW: '#eab308',
-        MAGENTA: '#d946ef',
-        CYAN: '#06b6d4',
-        WHITE: '#ffffff'
-    };
-
-    // Level data
-    const levels = [
-        {
-            name: "初試光芒",
-            size: 3,
-            tiles: [
-                {type: 'source', color: 'RED', rotation: 0, pos: [0,0]},
-                {type: 'path', rotation: 1, pos: [0,1]},
-                {type: 'path', rotation: 0, pos: [0,2]},
-                {type: 'path', rotation: 0, pos: [1,2]},
-                {type: 'target', color: 'RED', rotation: 0, pos: [2,2]}
-            ]
-        },
-        {
-            name: "光影疊加",
-            size: 3,
-            tiles: [
-                {type: 'source', color: 'RED', rotation: 0, pos: [0,0]},
-                {type: 'source', color: 'GREEN', rotation: 0, pos: [2,0]},
-                {type: 'path', rotation: 0, pos: [1,0]},
-                {type: 'path', rotation: 1, pos: [1,1]},
-                {type: 'target', color: 'YELLOW', rotation: 0, pos: [1,2]}
-            ]
-        },
-        {
-            name: "三原色實驗",
-            size: 4,
-            tiles: [
-                {type: 'source', color: 'RED', rotation: 0, pos: [0,0]},
-                {type: 'source', color: 'GREEN', rotation: 0, pos: [0,3]},
-                {type: 'source', color: 'BLUE', rotation: 0, pos: [3,0]},
-                {type: 'path', rotation: 0, pos: [1,1]},
-                {type: 'path', rotation: 0, pos: [1,2]},
-                {type: 'path', rotation: 1, pos: [2,1]},
-                {type: 'target', color: 'WHITE', rotation: 0, pos: [3,3]}
-            ]
-        }
+    const COLORS = { RED: '#ef4444', NONE: 'transparent' };
+    
+    // 第一關數據：直線連接
+    const level1 = [
+        { type: 'source', pos: [0,0], rot: 1 }, // 固定朝右
+        { type: 'path',   pos: [0,1], rot: 0 }, // 初始垂直 (點一下變水平)
+        { type: 'path',   pos: [0,2], rot: 0 }, // 初始垂直 (點一下變水平)
+        { type: 'target', pos: [0,3], rot: 3 }  // 目標在最右邊
     ];
 
-    let currentLevelIdx = 0;
-    let gridData = [];
+    let gameState = [];
 
-    function initGame() {
-        const level = levels[currentLevelIdx];
-        document.getElementById('level-info').innerText = `Level ${currentLevelIdx + 1}: ${level.name}`;
+    function init() {
         const grid = document.getElementById('grid');
-        grid.style.gridTemplateColumns = `repeat(${level.size}, 80px)`;
-        grid.innerHTML = '';
-        document.getElementById('next-btn').style.display = 'none';
-        document.getElementById('message').innerText = '';
-
-        gridData = Array(level.size).fill().map(() => Array(level.size).fill(null));
-
-        level.tiles.forEach(t => {
-            const tileDiv = document.createElement('div');
-            tileDiv.className = `tile ${t.type}`;
-            tileDiv.dataset.r = t.pos[0];
-            tileDiv.dataset.c = t.pos[1];
-            
-            // Initial random rotation for paths
-            let rotation = t.type === 'path' ? Math.floor(Math.random() * 4) : t.rotation;
-            tileDiv.style.transform = `rotate(${rotation * 90}deg)`;
-            
-            const svg = createPipeSVG(t.type, t.color);
-            tileDiv.appendChild(svg);
-
-            if(t.type === 'path' || t.type === 'source') {
-                tileDiv.onclick = () => rotateTile(t.pos[0], t.pos[1]);
-            }
-
-            if(t.type === 'target') {
-                tileDiv.style.borderColor = COLORS[t.color];
-            }
-
-            grid.appendChild(tileDiv);
-            gridData[t.pos[0]][t.pos[1]] = { ...t, currentRotation: rotation, element: tileDiv, activeColors: new Set() };
-        });
-
-        updateLight();
-    }
-
-    function createPipeSVG(type, colorKey) {
-        const ns = "http://www.w3.org/2000/svg";
-        const svg = document.createElementNS(ns, "svg");
-        svg.setAttribute("viewBox", "0 0 80 80");
-        svg.classList.add('pipe');
-
-        if(type === 'path' || type === 'source') {
-            const path = document.createElementNS(ns, "path");
-            // Simple L-shape pipe
-            path.setAttribute("d", "M 40 0 L 40 40 L 80 40");
-            path.setAttribute("stroke", "#475569");
-            path.setAttribute("stroke-width", "12");
-            path.setAttribute("fill", "none");
-            path.setAttribute("stroke-linecap", "round");
-            path.id = "pipe-line";
-            svg.appendChild(path);
-
-            const light = document.createElementNS(ns, "path");
-            light.setAttribute("d", "M 40 0 L 40 40 L 80 40");
-            light.setAttribute("stroke", "transparent");
-            light.setAttribute("stroke-width", "6");
-            light.setAttribute("fill", "none");
-            light.classList.add('light-path');
-            svg.appendChild(light);
-        } else if (type === 'target') {
-            const circle = document.createElementNS(ns, "circle");
-            circle.setAttribute("cx", "40");
-            circle.setAttribute("cy", "40");
-            circle.setAttribute("r", "20");
-            circle.setAttribute("fill", "none");
-            circle.setAttribute("stroke", "#475569");
-            circle.setAttribute("stroke-width", "4");
-            svg.appendChild(circle);
-
-            const core = document.createElementNS(ns, "circle");
-            core.setAttribute("cx", "40");
-            core.setAttribute("cy", "40");
-            core.setAttribute("r", "12");
-            core.setAttribute("fill", "transparent");
-            core.classList.add('target-core');
-            svg.appendChild(core);
-        }
-
-        if(type === 'source') {
-            const sourceDot = document.createElementNS(ns, "circle");
-            sourceDot.setAttribute("cx", "40");
-            sourceDot.setAttribute("cy", "40");
-            sourceDot.setAttribute("r", "10");
-            sourceDot.setAttribute("fill", COLORS[colorKey]);
-            svg.appendChild(sourceDot);
-        }
-
-        return svg;
-    }
-
-    function rotateTile(r, c) {
-        const tile = gridData[r][c];
-        if(!tile || tile.type === 'target') return;
+        grid.style.gridTemplateColumns = 'repeat(4, 80px)';
         
-        tile.currentRotation = (tile.currentRotation + 1) % 4;
-        tile.element.style.transform = `rotate(${tile.currentRotation * 90}deg)`;
-        updateLight();
-    }
+        level1.forEach((t, i) => {
+            const div = document.createElement('div');
+            div.className = 'tile';
+            div.style.transform = `rotate(${t.rot * 90}deg)`;
+            
+            // 繪製直線管道
+            div.innerHTML = `
+                <svg viewBox="0 0 80 80" style="width:100%;height:100%">
+                    <line x1="0" y1="40" x2="80" y2="40" class="pipe-line" />
+                    <line x1="0" y1="40" x2="80" y2="40" class="light-path" id="light-${i}" stroke="transparent" />
+                    ${t.type === 'source' ? '<circle cx="10" cy="40" r="8" fill="#ef4444"/>' : ''}
+                    ${t.type === 'target' ? '<circle cx="40" cy="40" r="15" fill="none" stroke="#ef4444" stroke-width="4"/>' : ''}
+                </svg>
+            `;
 
-    function updateLight() {
-        // Reset lights
-        const size = levels[currentLevelIdx].size;
-        for(let r=0; r<size; r++) {
-            for(let c=0; c<size; c++) {
-                if(gridData[r][c]) {
-                    gridData[r][c].activeColors = new Set();
-                    const lp = gridData[r][c].element.querySelector('.light-path');
-                    if(lp) lp.setAttribute("stroke", "transparent");
-                    const tc = gridData[r][c].element.querySelector('.target-core');
-                    if(tc) tc.setAttribute("fill", "transparent");
-                }
+            if(t.type === 'path') {
+                div.onclick = () => rotate(i);
             }
-        }
-
-        // Trace from sources
-        for(let r=0; r<size; r++) {
-            for(let c=0; c<size; c++) {
-                const tile = gridData[r][c];
-                if(tile && tile.type === 'source') {
-                    trace(r, c, tile.color);
-                }
-            }
-        }
-
-        checkWin();
-    }
-
-    function getExit(r, c, enterDir) {
-        // Directions: 0:up, 1:right, 2:down, 3:left
-        const tile = gridData[r][c];
-        if(!tile || tile.type === 'target') return null;
-
-        // Pipe shape: L-shape connecting Top(0) and Right(1) relative to 0 rotation
-        // After rotation R, actual connections are (0+R)%4 and (1+R)%4
-        const conn1 = (0 + tile.currentRotation) % 4;
-        const conn2 = (1 + tile.currentRotation) % 4;
-
-        if (enterDir === conn1) return conn2;
-        if (enterDir === conn2) return conn1;
-        return null;
-    }
-
-    function trace(r, c, colorName) {
-        const tile = gridData[r][c];
-        if(!tile) return;
-
-        // Visual feedback
-        tile.activeColors.add(colorName);
-        const combinedColor = mixColors(Array.from(tile.activeColors));
-        
-        const lp = tile.element.querySelector('.light-path');
-        if(lp) lp.setAttribute("stroke", combinedColor);
-
-        // Define neighbors
-        const dr = [-1, 0, 1, 0];
-        const dc = [0, 1, 0, -1];
-
-        // L-shape logic: it has two openings
-        const conn1 = (0 + tile.currentRotation) % 4;
-        const conn2 = (1 + tile.currentRotation) % 4;
-
-        [conn1, conn2].forEach(exitDir => {
-            const nr = r + dr[exitDir];
-            const nc = c + dc[exitDir];
-            const nextEnterDir = (exitDir + 2) % 4;
-
-            if(nr >= 0 && nr < gridData.length && nc >= 0 && nc < gridData[0].length) {
-                const nextTile = gridData[nr][nc];
-                if(nextTile) {
-                    if(nextTile.type === 'target') {
-                        nextTile.activeColors.add(colorName);
-                        const tc = nextTile.element.querySelector('.target-core');
-                        tc.setAttribute("fill", mixColors(Array.from(nextTile.activeColors)));
-                    } else {
-                        // If it's a path, check if it connects
-                        const nextExit = getExit(nr, nc, nextEnterDir);
-                        if(nextExit !== null && !nextTile.activeColors.has(colorName)) {
-                            trace(nr, nc, colorName);
-                        }
-                    }
-                }
-            }
+            
+            grid.appendChild(div);
+            gameState.push({ ...t, element: div });
         });
+        update();
     }
 
-    function mixColors(colorArray) {
-        const hasRed = colorArray.includes('RED');
-        const hasGreen = colorArray.includes('GREEN');
-        const hasBlue = colorArray.includes('BLUE');
-
-        if(hasRed && hasGreen && hasBlue) return COLORS.WHITE;
-        if(hasRed && hasGreen) return COLORS.YELLOW;
-        if(hasRed && hasBlue) return COLORS.MAGENTA;
-        if(hasGreen && hasBlue) return COLORS.CYAN;
-        if(hasRed) return COLORS.RED;
-        if(hasGreen) return COLORS.GREEN;
-        if(hasBlue) return COLORS.BLUE;
-        return 'transparent';
+    function rotate(idx) {
+        gameState[idx].rot = (gameState[idx].rot + 1) % 4;
+        gameState[idx].element.style.transform = `rotate(${gameState[idx].rot * 90}deg)`;
+        update();
     }
 
-    function checkWin() {
-        const level = levels[currentLevelIdx];
-        let allTargetsMet = true;
-
-        level.tiles.filter(t => t.type === 'target').forEach(t => {
-            const liveTile = gridData[t.pos[0]][t.pos[1]];
-            const currentMixed = mixColors(Array.from(liveTile.activeColors));
-            if(currentMixed !== COLORS[t.color]) {
-                allTargetsMet = false;
-            }
+    function update() {
+        // 重置光效
+        gameState.forEach((_, i) => {
+            const l = document.getElementById(`light-${i}`);
+            if(l) l.setAttribute('stroke', 'transparent');
         });
 
-        if(allTargetsMet) {
-            document.getElementById('message').innerText = "✨ 能量注入成功！關卡完成 ✨";
-            document.getElementById('next-btn').style.display = 'inline-block';
-            document.getElementById('grid').classList.add('solved');
+        // 簡單邏輯檢測：如果所有方塊 rot 都是 1 (水平)，則通關
+        // 在這簡化版中，只要方塊1和2是水平的(rot 1 或 3)，光就傳得過去
+        let p1 = gameState[1].rot % 2 === 1;
+        let p2 = gameState[2].rot % 2 === 1;
+
+        if(p1) document.getElementById('light-1').setAttribute('stroke', COLORS.RED);
+        if(p1 && p2) {
+            document.getElementById('light-2').setAttribute('stroke', COLORS.RED);
+            document.getElementById('message').innerText = "太棒了！紅光成功接通！";
         } else {
-            document.getElementById('grid').classList.remove('solved');
+            document.getElementById('message').innerText = "";
         }
     }
 
-    function resetLevel() {
-        initGame();
-    }
-
-    function nextLevel() {
-        currentLevelIdx++;
-        if(currentLevelIdx < levels.length) {
-            initGame();
-        } else {
-            document.getElementById('message').innerText = "🎉 恭喜通關所有關卡！你已成為光影大師！";
-            document.getElementById('next-btn').style.display = 'none';
-        }
-    }
-
-    window.onload = initGame;
+    init();
 </script>
-
 </body>
 </html>
-"""
-
-file_path = "Lumina_Link_Game.html"
-with open(file_path, "w", encoding="utf-8") as f:
-    f.write(html_content)
-
-print(f"File saved to {file_path}")
