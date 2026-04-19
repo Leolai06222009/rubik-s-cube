@@ -1,621 +1,489 @@
+import os
+
+# Define the HTML content for the puzzle game "Lumina Link"
+html_content = """
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Easy Game 2.0</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Lumina Link - 光影接連</title>
     <style>
+        :root {
+            --bg-color: #0f172a;
+            --tile-color: #1e293b;
+            --border-color: #334155;
+            --text-color: #f8fafc;
+            --accent-color: #38bdf8;
+            --red: #ef4444;
+            --green: #22c55e;
+            --blue: #3b82f6;
+            --yellow: #eab308;
+            --magenta: #d946ef;
+            --cyan: #06b6d4;
+            --white: #ffffff;
+        }
+
         body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #282c34;
-            color: #ffffff;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
             min-height: 100vh;
             overflow: hidden;
         }
 
-        .container {
+        #game-container {
             text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100vh;
-            position: relative;
+            max-width: 600px;
+            width: 95%;
         }
 
-        .game-title-area {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-        }
-
-        .main-title {
-            font-size: 8em;
+        header {
             margin-bottom: 20px;
-            color: #61dafb;
-            text-shadow: 0 0 10px rgba(97, 218, 251, 0.7);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            background: linear-gradient(45deg, var(--red), var(--green), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+        }
+
+        #level-info {
+            font-size: 1.2rem;
+            margin-top: 5px;
+            color: var(--accent-color);
+        }
+
+        #grid {
+            display: grid;
+            gap: 10px;
+            background-color: var(--border-color);
+            padding: 10px;
+            border-radius: 12px;
+            margin: 0 auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             position: relative;
-            z-index: 10;
-            cursor: pointer;
         }
 
-        .start-game-hidden {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.5);
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.5s ease-in-out;
-            z-index: 5;
-        }
-
-        .start-game-hidden.active {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translate(-50%, -50%) scale(1);
-            z-index: 15;
-        }
-
-        .start-game-hidden button {
-            padding: 15px 30px;
-            font-size: 2em;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
+        .tile {
+            width: 80px;
+            height: 80px;
+            background-color: var(--tile-color);
             border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: transform 0.2s, background-color 0.3s;
+            position: relative;
+            overflow: hidden;
         }
 
-        .start-game-hidden button:hover {
-            background-color: #45a049;
+        .tile:hover {
+            background-color: #2d3e50;
         }
 
-        .settings-icon {
+        .tile.source::after {
+            content: '●';
+            font-size: 24px;
+        }
+
+        .tile.target {
+            border: 3px solid transparent;
+        }
+
+        /* SVG Pipes */
+        .pipe {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            background: none;
-            border: none;
-            color: #ffffff;
-            font-size: 2.5em;
-            cursor: pointer;
-            transition: color 0.3s ease;
-            z-index: 20;
-        }
-
-        .settings-icon:hover {
-            color: #61dafb;
-        }
-
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
             justify-content: center;
-            align-items: center;
-            z-index: 100;
-            display: none;
         }
 
-        .overlay-content {
-            background-color: #3a3f47;
-            padding: 40px;
-            border-radius: 10px;
-            text-align: center;
-            width: 80%;
-            max-width: 500px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .overlay-content h2 {
-            color: #61dafb;
-            margin-top: 0;
-            font-size: 2em;
-        }
-
-        .setting-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.2em;
-        }
-
-        .setting-item input[type="range"] {
-            width: 70%;
-            -webkit-appearance: none;
-            height: 8px;
-            background: #555;
-            border-radius: 5px;
-            outline: none;
-            opacity: 0.7;
-            transition: opacity .2s;
-        }
-
-        .setting-item input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #61dafb;
-            cursor: pointer;
-        }
-
-        .setting-item input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #61dafb;
-            cursor: pointer;
-        }
-
-        .overlay-button {
+        button {
             padding: 10px 20px;
-            font-size: 1.2em;
-            background-color: #007bff;
-            color: white;
+            font-size: 1rem;
+            background-color: var(--accent-color);
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
+            color: var(--bg-color);
+            font-weight: bold;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: opacity 0.2s;
         }
 
-        .overlay-button:hover {
-            background-color: #0056b3;
+        button:hover {
+            opacity: 0.9;
         }
 
-        #helpOverlay .overlay-content p {
-            font-size: 1.1em;
-            line-height: 1.5;
-            color: #ccc;
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+            height: 24px;
         }
+
+        .instructions {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        /* Win Animation */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .solved .tile {
+            animation: pulse 0.5s ease-in-out;
+        }
+
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="game-title-area">
-            <h1 id="mainTitle" class="main-title">easy game 2.0</h1>
-            <div id="startGameButton" class="start-game-hidden">
-                <button>開始遊戲</button>
-            </div>
-        </div>
 
-        <button id="settingsIcon" class="settings-icon">
-            <i class="fas fa-cog"></i>
-        </button>
+<div id="game-container">
+    <header>
+        <h1>LUMINA LINK</h1>
+        <div id="level-info">Level 1: 初試光芒</div>
+    </header>
 
-        <!-- Settings Overlay -->
-        <div id="settingsOverlay" class="overlay">
-            <div class="overlay-content">
-                <h2>設定</h2>
-                <div class="setting-item">
-                    <span>音量大小:</span>
-                    <input type="range" id="volumeControl" min="0" max="100" value="100">
-                    <span id="volumeValue">100</span>
-                </div>
-                <button id="helpButton" class="overlay-button">幫助</button>
-                <button id="backFromSettings" class="overlay-button">返回上一頁</button>
-            </div>
-        </div>
+    <div id="grid"></div>
 
-        <!-- Help Overlay -->
-        <div id="helpOverlay" class="overlay">
-            <div class="overlay-content">
-                <h2>幫助</h2>
-                <p>提示: 開始按鈕藏在easy game之後</p>
-                <button id="backFromHelp" class="overlay-button">返回上一頁</button>
-            </div>
-        </div>
+    <div id="message"></div>
+
+    <div class="controls">
+        <button onclick="resetLevel()">重置關卡</button>
+        <button id="next-btn" style="display:none;" onclick="nextLevel()">下一關</button>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const mainTitle = document.getElementById('mainTitle');
-            const startGameButton = document.getElementById('startGameButton');
-            const settingsIcon = document.getElementById('settingsIcon');
-            const settingsOverlay = document.getElementById('settingsOverlay');
-            const backFromSettings = document.getElementById('backFromSettings');
-            const volumeControl = document.getElementById('volumeControl');
-            const volumeValue = document.getElementById('volumeValue');
-            const helpButton = document.getElementById('helpButton');
-            const helpOverlay = document.getElementById('helpOverlay');
-            const backFromHelp = document.getElementById('backFromHelp');
+    <div class="instructions">
+        點擊方塊旋轉光路。將<strong>彩色光源</strong>引導至<strong>目標點</strong>。<br>
+        紅+綠=黃 | 紅+藍=洋紅 | 綠+藍=青 | 三色=白
+    </div>
+</div>
 
-            mainTitle.addEventListener('click', () => {
-                startGameButton.classList.add('active');
-            });
+<script>
+    const COLORS = {
+        NONE: 'transparent',
+        RED: '#ef4444',
+        GREEN: '#22c55e',
+        BLUE: '#3b82f6',
+        YELLOW: '#eab308',
+        MAGENTA: '#d946ef',
+        CYAN: '#06b6d4',
+        WHITE: '#ffffff'
+    };
 
-            settingsIcon.addEventListener('click', () => {
-                settingsOverlay.style.display = 'flex';
-            });
+    // Level data
+    const levels = [
+        {
+            name: "初試光芒",
+            size: 3,
+            tiles: [
+                {type: 'source', color: 'RED', rotation: 0, pos: [0,0]},
+                {type: 'path', rotation: 1, pos: [0,1]},
+                {type: 'path', rotation: 0, pos: [0,2]},
+                {type: 'path', rotation: 0, pos: [1,2]},
+                {type: 'target', color: 'RED', rotation: 0, pos: [2,2]}
+            ]
+        },
+        {
+            name: "光影疊加",
+            size: 3,
+            tiles: [
+                {type: 'source', color: 'RED', rotation: 0, pos: [0,0]},
+                {type: 'source', color: 'GREEN', rotation: 0, pos: [2,0]},
+                {type: 'path', rotation: 0, pos: [1,0]},
+                {type: 'path', rotation: 1, pos: [1,1]},
+                {type: 'target', color: 'YELLOW', rotation: 0, pos: [1,2]}
+            ]
+        },
+        {
+            name: "三原色實驗",
+            size: 4,
+            tiles: [
+                {type: 'source', color: 'RED', rotation: 0, pos: [0,0]},
+                {type: 'source', color: 'GREEN', rotation: 0, pos: [0,3]},
+                {type: 'source', color: 'BLUE', rotation: 0, pos: [3,0]},
+                {type: 'path', rotation: 0, pos: [1,1]},
+                {type: 'path', rotation: 0, pos: [1,2]},
+                {type: 'path', rotation: 1, pos: [2,1]},
+                {type: 'target', color: 'WHITE', rotation: 0, pos: [3,3]}
+            ]
+        }
+    ];
 
-            backFromSettings.addEventListener('click', () => {
-                settingsOverlay.style.display = 'none';
-            });
+    let currentLevelIdx = 0;
+    let gridData = [];
 
-            volumeControl.addEventListener('input', (event) => {
-                volumeValue.textContent = event.target.value;
-                console.log('Volume set to:', event.target.value);
-            });
+    function initGame() {
+        const level = levels[currentLevelIdx];
+        document.getElementById('level-info').innerText = `Level ${currentLevelIdx + 1}: ${level.name}`;
+        const grid = document.getElementById('grid');
+        grid.style.gridTemplateColumns = `repeat(${level.size}, 80px)`;
+        grid.innerHTML = '';
+        document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('message').innerText = '';
 
-            helpButton.addEventListener('click', () => {
-                settingsOverlay.style.display = 'none';
-                helpOverlay.style.display = 'flex';
-            });
+        gridData = Array(level.size).fill().map(() => Array(level.size).fill(null));
 
-            backFromHelp.addEventListener('click', () => {
-                helpOverlay.style.display = 'none';
-                settingsOverlay.style.display = 'flex';
-            });
+        level.tiles.forEach(t => {
+            const tileDiv = document.createElement('div');
+            tileDiv.className = `tile ${t.type}`;
+            tileDiv.dataset.r = t.pos[0];
+            tileDiv.dataset.c = t.pos[1];
+            
+            // Initial random rotation for paths
+            let rotation = t.type === 'path' ? Math.floor(Math.random() * 4) : t.rotation;
+            tileDiv.style.transform = `rotate(${rotation * 90}deg)`;
+            
+            const svg = createPipeSVG(t.type, t.color);
+            tileDiv.appendChild(svg);
+
+            if(t.type === 'path' || t.type === 'source') {
+                tileDiv.onclick = () => rotateTile(t.pos[0], t.pos[1]);
+            }
+
+            if(t.type === 'target') {
+                tileDiv.style.borderColor = COLORS[t.color];
+            }
+
+            grid.appendChild(tileDiv);
+            gridData[t.pos[0]][t.pos[1]] = { ...t, currentRotation: rotation, element: tileDiv, activeColors: new Set() };
         });
-    </script>
-</body>
-</html>
-直接複製以上全部內容，存成 .html 檔即可使用。style.css231 linescssindex.html65 lineshtmlscript.js78 linesjs合併上午10:48html<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Easy Game 2.0</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #282c34;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
+
+        updateLight();
+    }
+
+    function createPipeSVG(type, colorKey) {
+        const ns = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(ns, "svg");
+        svg.setAttribute("viewBox", "0 0 80 80");
+        svg.classList.add('pipe');
+
+        if(type === 'path' || type === 'source') {
+            const path = document.createElementNS(ns, "path");
+            // Simple L-shape pipe
+            path.setAttribute("d", "M 40 0 L 40 40 L 80 40");
+            path.setAttribute("stroke", "#475569");
+            path.setAttribute("stroke-width", "12");
+            path.setAttribute("fill", "none");
+            path.setAttribute("stroke-linecap", "round");
+            path.id = "pipe-line";
+            svg.appendChild(path);
+
+            const light = document.createElementNS(ns, "path");
+            light.setAttribute("d", "M 40 0 L 40 40 L 80 40");
+            light.setAttribute("stroke", "transparent");
+            light.setAttribute("stroke-width", "6");
+            light.setAttribute("fill", "none");
+            light.classList.add('light-path');
+            svg.appendChild(light);
+        } else if (type === 'target') {
+            const circle = document.createElementNS(ns, "circle");
+            circle.setAttribute("cx", "40");
+            circle.setAttribute("cy", "40");
+            circle.setAttribute("r", "20");
+            circle.setAttribute("fill", "none");
+            circle.setAttribute("stroke", "#475569");
+            circle.setAttribute("stroke-width", "4");
+            svg.appendChild(circle);
+
+            const core = document.createElementNS(ns, "circle");
+            core.setAttribute("cx", "40");
+            core.setAttribute("cy", "40");
+            core.setAttribute("r", "12");
+            core.setAttribute("fill", "transparent");
+            core.classList.add('target-core');
+            svg.appendChild(core);
         }
 
-        .container {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100vh;
-            position: relative;
+        if(type === 'source') {
+            const sourceDot = document.createElementNS(ns, "circle");
+            sourceDot.setAttribute("cx", "40");
+            sourceDot.setAttribute("cy", "40");
+            sourceDot.setAttribute("r", "10");
+            sourceDot.setAttribute("fill", COLORS[colorKey]);
+            svg.appendChild(sourceDot);
         }
 
-        .game-title-area {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-        }
+        return svg;
+    }
 
-        .main-title {
-            font-size: 8em;
-            margin-bottom: 20px;
-            color: #61dafb;
-            text-shadow: 0 0 10px rgba(97, 218, 251, 0.7);
-            position: relative;
-            z-index: 10;
-            cursor: pointer;
-        }
+    function rotateTile(r, c) {
+        const tile = gridData[r][c];
+        if(!tile || tile.type === 'target') return;
+        
+        tile.currentRotation = (tile.currentRotation + 1) % 4;
+        tile.element.style.transform = `rotate(${tile.currentRotation * 90}deg)`;
+        updateLight();
+    }
 
-        .start-game-hidden {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.5);
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.5s ease-in-out;
-            z-index: 5;
-        }
-
-        .start-game-hidden.active {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translate(-50%, -50%) scale(1);
-            z-index: 15;
-        }
-
-        .start-game-hidden button {
-            padding: 15px 30px;
-            font-size: 2em;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .start-game-hidden button:hover {
-            background-color: #45a049;
-        }
-
-        .settings-icon {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: none;
-            border: none;
-            color: #ffffff;
-            font-size: 2.5em;
-            cursor: pointer;
-            transition: color 0.3s ease;
-            z-index: 20;
-        }
-
-        .settings-icon:hover {
-            color: #61dafb;
-        }
-
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            display: none;
-        }
-
-        .overlay-content {
-            background-color: #3a3f47;
-            padding: 40px;
-            border-radius: 10px;
-            text-align: center;
-            width: 80%;
-            max-width: 500px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .overlay-content h2 {
-            color: #61dafb;
-            margin-top: 0;
-            font-size: 2em;
-        }
-
-        .setting-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.2em;
-        }
-
-        .setting-item input[type="range"] {
-            width: 70%;
-            -webkit-appearance: none;
-            height: 8px;
-            background: #555;
-            border-radius: 5px;
-            outline: none;
-            opacity: 0.7;
-            transition: opacity .2s;
-        }
-
-        .setting-item input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #61dafb;
-            cursor: pointer;
-        }
-
-        .setting-item input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #61dafb;
-            cursor: pointer;
-        }
-
-        .overlay-button {
-            padding: 10px 20px;
-            font-size: 1.2em;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .overlay-button:hover {
-            background-color: #0056b3;
-        }
-
-        #helpOverlay .overlay-content p {
-            font-size: 1.1em;
-            line-height: 1.5;
-            color: #ccc;
-        }
-
-        .level-selection-content {
-            max-width: 450px;
-        }
-
-        .level-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            justify-items: center;
-            padding: 20px 0;
-        }
-
-        @media (min-width: 450px) {
-            .level-grid {
-                justify-content: center;
+    function updateLight() {
+        // Reset lights
+        const size = levels[currentLevelIdx].size;
+        for(let r=0; r<size; r++) {
+            for(let c=0; c<size; c++) {
+                if(gridData[r][c]) {
+                    gridData[r][c].activeColors = new Set();
+                    const lp = gridData[r][c].element.querySelector('.light-path');
+                    if(lp) lp.setAttribute("stroke", "transparent");
+                    const tc = gridData[r][c].element.querySelector('.target-core');
+                    if(tc) tc.setAttribute("fill", "transparent");
+                }
             }
         }
 
-        .level-item {
-            width: 100px;
-            height: 100px;
-            background-color: #61dafb;
-            color: #282c34;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2.5em;
-            font-weight: bold;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        // Trace from sources
+        for(let r=0; r<size; r++) {
+            for(let c=0; c<size; c++) {
+                const tile = gridData[r][c];
+                if(tile && tile.type === 'source') {
+                    trace(r, c, tile.color);
+                }
+            }
         }
 
-        .level-item:hover {
-            transform: scale(1.1) translateY(-5px);
-            background-color: #4fa8c7;
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
-        }
+        checkWin();
+    }
 
-        .level-item:active {
-            transform: scale(0.95);
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="game-title-area">
-            <h1 id="mainTitle" class="main-title">easy game 2.0</h1>
-            <div id="startGameButton" class="start-game-hidden">
-                <button>開始遊戲</button>
-            </div>
-        </div>
+    function getExit(r, c, enterDir) {
+        // Directions: 0:up, 1:right, 2:down, 3:left
+        const tile = gridData[r][c];
+        if(!tile || tile.type === 'target') return null;
 
-        <button id="settingsIcon" class="settings-icon">
-            <i class="fas fa-cog"></i>
-        </button>
+        // Pipe shape: L-shape connecting Top(0) and Right(1) relative to 0 rotation
+        // After rotation R, actual connections are (0+R)%4 and (1+R)%4
+        const conn1 = (0 + tile.currentRotation) % 4;
+        const conn2 = (1 + tile.currentRotation) % 4;
 
-        <!-- Settings Overlay -->
-        <div id="settingsOverlay" class="overlay">
-            <div class="overlay-content">
-                <h2>設定</h2>
-                <div class="setting-item">
-                    <span>音量大小:</span>
-                    <input type="range" id="volumeControl" min="0" max="100" value="100">
-                    <span id="volumeValue">100</span>
-                </div>
-                <button id="helpButton" class="overlay-button">幫助</button>
-                <button id="backFromSettings" class="overlay-button">返回上一頁</button>
-            </div>
-        </div>
+        if (enterDir === conn1) return conn2;
+        if (enterDir === conn2) return conn1;
+        return null;
+    }
 
-        <!-- Help Overlay -->
-        <div id="helpOverlay" class="overlay">
-            <div class="overlay-content">
-                <h2>幫助</h2>
-                <p>提示: 開始按鈕藏在easy game之後</p>
-                <button id="backFromHelp" class="overlay-button">返回上一頁</button>
-            </div>
-        </div>
+    function trace(r, c, colorName) {
+        const tile = gridData[r][c];
+        if(!tile) return;
 
-        <!-- Level Selection Overlay -->
-        <div id="levelOverlay" class="overlay">
-            <div class="overlay-content level-selection-content">
-                <h2>選擇關卡</h2>
-                <div class="level-grid">
-                    <div class="level-item" data-level="1">1</div>
-                    <div class="level-item" data-level="2">2</div>
-                    <div class="level-item" data-level="3">3</div>
-                    <div class="level-item" data-level="4">4</div>
-                    <div class="level-item" data-level="5">5</div>
-                </div>
-                <button id="backFromLevel" class="overlay-button">返回首頁</button>
-            </div>
-        </div>
-    </div>
+        // Visual feedback
+        tile.activeColors.add(colorName);
+        const combinedColor = mixColors(Array.from(tile.activeColors));
+        
+        const lp = tile.element.querySelector('.light-path');
+        if(lp) lp.setAttribute("stroke", combinedColor);
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const mainTitle = document.getElementById('mainTitle');
-            const startGameButton = document.getElementById('startGameButton');
-            const settingsIcon = document.getElementById('settingsIcon');
-            const settingsOverlay = document.getElementById('settingsOverlay');
-            const backFromSettings = document.getElementById('backFromSettings');
-            const volumeControl = document.getElementById('volumeControl');
-            const volumeValue = document.getElementById('volumeValue');
-            const helpButton = document.getElementById('helpButton');
-            const helpOverlay = document.getElementById('helpOverlay');
-            const backFromHelp = document.getElementById('backFromHelp');
-            const levelOverlay = document.getElementById('levelOverlay');
-            const backFromLevel = document.getElementById('backFromLevel');
-            const levelItems = document.querySelectorAll('.level-item');
+        // Define neighbors
+        const dr = [-1, 0, 1, 0];
+        const dc = [0, 1, 0, -1];
 
-            mainTitle.addEventListener('click', () => {
-                startGameButton.classList.add('active');
-            });
+        // L-shape logic: it has two openings
+        const conn1 = (0 + tile.currentRotation) % 4;
+        const conn2 = (1 + tile.currentRotation) % 4;
 
-            startGameButton.querySelector('button').addEventListener('click', () => {
-                levelOverlay.style.display = 'flex';
-                startGameButton.classList.remove('active');
-            });
+        [conn1, conn2].forEach(exitDir => {
+            const nr = r + dr[exitDir];
+            const nc = c + dc[exitDir];
+            const nextEnterDir = (exitDir + 2) % 4;
 
-            backFromLevel.addEventListener('click', () => {
-                levelOverlay.style.display = 'none';
-                startGameButton.classList.add('active');
-            });
-
-            levelItems.forEach(item => {
-                item.addEventListener('click', () => {
-                    const level = item.getAttribute('data-level');
-                    alert(`你選擇了關卡 ${level}`);
-                });
-            });
-
-            settingsIcon.addEventListener('click', () => {
-                settingsOverlay.style.display = 'flex';
-            });
-
-            backFromSettings.addEventListener('click', () => {
-                settingsOverlay.style.display = 'none';
-            });
-
-            volumeControl.addEventListener('input', (event) => {
-                volumeValue.textContent = event.target.value;
-                console.log('Volume set to:', event.target.value);
-            });
-
-            helpButton.addEventListener('click', () => {
-                settingsOverlay.style.display = 'none';
-                helpOverlay.style.display = 'flex';
-            });
-
-            backFromHelp.addEventListener('click', () => {
-                helpOverlay.style.display = 'none';
-                settingsOverlay.style.display = 'flex';
-            });
+            if(nr >= 0 && nr < gridData.length && nc >= 0 && nc < gridData[0].length) {
+                const nextTile = gridData[nr][nc];
+                if(nextTile) {
+                    if(nextTile.type === 'target') {
+                        nextTile.activeColors.add(colorName);
+                        const tc = nextTile.element.querySelector('.target-core');
+                        tc.setAttribute("fill", mixColors(Array.from(nextTile.activeColors)));
+                    } else {
+                        // If it's a path, check if it connects
+                        const nextExit = getExit(nr, nc, nextEnterDir);
+                        if(nextExit !== null && !nextTile.activeColors.has(colorName)) {
+                            trace(nr, nc, colorName);
+                        }
+                    }
+                }
+            }
         });
-    </script>
+    }
+
+    function mixColors(colorArray) {
+        const hasRed = colorArray.includes('RED');
+        const hasGreen = colorArray.includes('GREEN');
+        const hasBlue = colorArray.includes('BLUE');
+
+        if(hasRed && hasGreen && hasBlue) return COLORS.WHITE;
+        if(hasRed && hasGreen) return COLORS.YELLOW;
+        if(hasRed && hasBlue) return COLORS.MAGENTA;
+        if(hasGreen && hasBlue) return COLORS.CYAN;
+        if(hasRed) return COLORS.RED;
+        if(hasGreen) return COLORS.GREEN;
+        if(hasBlue) return COLORS.BLUE;
+        return 'transparent';
+    }
+
+    function checkWin() {
+        const level = levels[currentLevelIdx];
+        let allTargetsMet = true;
+
+        level.tiles.filter(t => t.type === 'target').forEach(t => {
+            const liveTile = gridData[t.pos[0]][t.pos[1]];
+            const currentMixed = mixColors(Array.from(liveTile.activeColors));
+            if(currentMixed !== COLORS[t.color]) {
+                allTargetsMet = false;
+            }
+        });
+
+        if(allTargetsMet) {
+            document.getElementById('message').innerText = "✨ 能量注入成功！關卡完成 ✨";
+            document.getElementById('next-btn').style.display = 'inline-block';
+            document.getElementById('grid').classList.add('solved');
+        } else {
+            document.getElementById('grid').classList.remove('solved');
+        }
+    }
+
+    function resetLevel() {
+        initGame();
+    }
+
+    function nextLevel() {
+        currentLevelIdx++;
+        if(currentLevelIdx < levels.length) {
+            initGame();
+        } else {
+            document.getElementById('message').innerText = "🎉 恭喜通關所有關卡！你已成為光影大師！";
+            document.getElementById('next-btn').style.display = 'none';
+        }
+    }
+
+    window.onload = initGame;
+</script>
+
 </body>
 </html>
+"""
+
+file_path = "Lumina_Link_Game.html"
+with open(file_path, "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+print(f"File saved to {file_path}")
