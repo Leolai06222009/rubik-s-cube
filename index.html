@@ -1,168 +1,202 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumina Link - 輕鬆入門版</title>
-    <style>
-        :root {
-            --bg-color: #0f172a;
-            --tile-color: #1e293b;
-            --border-color: #334155;
-            --text-color: #f8fafc;
-            --accent-color: #38bdf8;
-            --red: #ef4444;
-        }
-
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        #grid {
-            display: grid;
-            gap: 12px;
-            background-color: var(--border-color);
-            padding: 15px;
-            border-radius: 16px;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-        }
-
-        .tile {
-            width: 80px;
-            height: 80px;
-            background-color: var(--tile-color);
-            border-radius: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .tile:hover { background-color: #2d3e50; }
-
-        .pipe-line {
-            stroke: #475569;
-            stroke-width: 14;
-            fill: none;
-            stroke-linecap: round;
-        }
-
-        .light-path {
-            stroke-width: 8;
-            fill: none;
-            stroke-linecap: round;
-            filter: blur(1px);
-        }
-
-        #message {
-            margin: 20px 0;
-            font-size: 1.2rem;
-            height: 30px;
-            color: #fbbf24;
-            font-weight: bold;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            background: var(--accent-color);
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lumina Link - 高級自訂挑戰版</title>
+  <style>
+    /* 沿用先前的精美樣式 */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; padding: 2rem; }
+    .top-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; width: 100%; max-width: 900px; }
+    .title { font-size: 24px; font-weight: 800; color: #f87171; text-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+    .lvl-btns { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .lvl-btn { padding: 6px 10px; font-size: 11px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; cursor: pointer; }
+    .lvl-btn.on { background: #1e3a5f; color: #38bdf8; border-color: #38bdf8; }
+    .main { display: flex; gap: 30px; align-items: flex-start; flex-wrap: wrap; justify-content: center; width: 100%; }
+    canvas { border-radius: 12px; cursor: pointer; background: #020617; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+    .side { flex: 1; min-width: 280px; max-width: 320px; display: flex; flex-direction: column; gap: 15px; }
+    .status-box { background: #1e293b; padding: 15px; border-radius: 12px; border: 1px solid #334155; }
+    .status { font-size: 18px; font-weight: bold; color: #fbbf24; }
+    .status.win { color: #4ade80; }
+    .hint { font-size: 14px; color: #94a3b8; line-height: 1.5; border-left: 3px solid #38bdf8; padding-left: 10px; }
+    .dir-panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 15px; }
+    .dir-grid { display: grid; grid-template-columns: repeat(3, 40px); gap: 5px; margin: 10px auto; width: fit-content; }
+    .dir-btn { width: 40px; height: 40px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; cursor: pointer; color: #94a3b8; }
+    .dir-btn.on { background: #450a0a; color: #f87171; border-color: #ef4444; }
+    .ctrl-btn { padding: 12px; font-size: 14px; border-radius: 8px; flex: 1; border: 1px solid #475569; background: #334155; color: white; cursor: pointer; }
+  </style>
 </head>
 <body>
 
-    <h1>LUMINA LINK</h1>
-    <p>Level 1: 簡單直線 (點擊方塊使其變水平)</p>
-    
-    <div id="message"></div>
-    <div id="grid"></div>
+<div class="top-bar">
+  <span class="title">LUMINA LINK</span>
+  <div class="lvl-btns" id="lvlBtns"></div>
+</div>
 
-    <div style="margin-top: 20px;">
-        <button class="btn" onclick="location.reload()">重新開始</button>
+<div class="main">
+  <canvas id="board"></canvas>
+  <div class="side">
+    <div class="status-box">
+        <div id="status" class="status">載入中...</div>
+        <div id="moves" style="font-size: 12px; color: #64748b;">旋轉次數: 0</div>
     </div>
+    <div class="hint" id="hint"></div>
+    <div class="dir-panel">
+      <div style="font-size:12px; color:#94a3b8">終點接收方向</div>
+      <div class="dir-grid" id="dirGrid"></div>
+    </div>
+    <div class="controls" style="display:flex; gap:10px;">
+      <button class="ctrl-btn" onclick="restart()">重設</button>
+      <button class="ctrl-btn" onclick="showSolve()" style="background:#064e3b">顯示解答</button>
+    </div>
+  </div>
+</div>
 
 <script>
-    const COLORS = { RED: '#ef4444', NONE: 'transparent' };
+  const T = 70, G = 8, P = 15;
+  const CONN = {
+    line:  [[0,1,0,1],[1,0,1,0],[0,1,0,1],[1,0,1,0]],
+    turn:  [[0,1,1,0],[0,0,1,1],[1,0,0,1],[1,1,0,0]],
+    src:   [[1,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,1]],
+    goal:  [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]],
+    empty: [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+  };
+
+  const LEVELS = [
+    { name: "01", cols: 3, rows: 1, color: "#ef4444", hint: "直線入門。", tiles: [{t:"src",r:0,f:1}, {t:"line",r:1,f:0}, {t:"goal",r:0,f:0}], sol:[null,0,3] },
+    { name: "02", cols: 3, rows: 2, color: "#38bdf8", hint: "學習轉彎。", tiles: [{t:"src",r:0,f:1}, {t:"turn",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"goal",r:0,f:0}, {t:"empty",r:0,f:0}], sol:[null,0,null,null,0,null] },
     
-    // 第一關數據：直線連接
-    const level1 = [
-        { type: 'source', pos: [0,0], rot: 1 }, // 固定朝右
-        { type: 'path',   pos: [0,1], rot: 0 }, // 初始垂直 (點一下變水平)
-        { type: 'path',   pos: [0,2], rot: 0 }, // 初始垂直 (點一下變水平)
-        { type: 'target', pos: [0,3], rot: 3 }  // 目標在最右邊
-    ];
+    // 第三關修改：目標點上方改為橫向直線
+    { name: "03", cols: 3, rows: 3, color: "#4ade80", hint: "目標點上方新增了直線方塊，請確保它是橫向的。",
+      tiles: [{t:"src",r:0,f:1}, {t:"turn",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"line",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"goal",r:0,f:0}, {t:"empty",r:0,f:0}], 
+      sol:[null,0,null,null,0,null,null,0,null] },
+      
+    { name: "04", cols: 4, rows: 3, color: "#fbbf24", hint: "路徑分支練習。",
+      tiles: [{t:"src",r:0,f:1}, {t:"line",r:1,f:0}, {t:"line",r:1,f:0}, {t:"turn",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"line",r:1,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"goal",r:0,f:0}], sol:[null,0,0,0,null,null,null,1,null,null,null,0] },
+      
+    // 第五關修改：全轉角挑戰
+    { name: "05", cols: 4, rows: 4, color: "#f472b6", hint: "除了起點終點外，全部都是轉角方塊！挑戰空間邏輯。",
+      tiles: [{t:"src",r:0,f:1}, {t:"turn",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"goal",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"turn",r:0,f:0}], 
+      sol:[null,0,1,2,3,0,1,2,3,0,1,3,2,3,0,1] },
 
-    let gameState = [];
+    { name: "06", cols: 5, rows: 2, color: "#a855f7", hint: "長程直線。", tiles: [{t:"src",r:0,f:1}, {t:"line",r:1,f:0}, {t:"line",r:1,f:0}, {t:"line",r:1,f:0}, {t:"turn",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"goal",r:0,f:0}], sol:[null,0,0,0,0,null,null,null,null,0] },
+    { name: "07", cols: 5, rows: 5, color: "#fb7185", hint: "大型矩陣挑戰。", tiles: [{t:"src",r:0,f:1}, {t:"line",r:1,f:0}, {t:"turn",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"line",r:1,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"line",r:1,f:0}, {t:"turn",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"line",r:1,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"goal",r:0,f:0}], sol:[null,0,0,null,null,null,null,1,null,null,null,null,3,0,0,null,null,null,null,1,null,null,null,null,0] },
+    { name: "08", cols: 4, rows: 5, color: "#2dd4bf", hint: "U型迴轉測試。", tiles: [{t:"src",r:0,f:1}, {t:"turn",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"line",r:1,f:0}, {t:"turn",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"line",r:1,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"goal",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}], sol:[null,0,null,null,null,3,0,0,null,null,null,1,null,null,null,0,null,null,null,null] },
+    { name: "09", cols: 5, rows: 4, color: "#6366f1", hint: "對稱迷宮。", tiles: [{t:"src",r:0,f:1}, {t:"line",r:1,f:0}, {t:"turn",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"line",r:1,f:0}, {t:"turn",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"line",r:1,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"goal",r:0,f:0}], sol:[null,0,0,null,null,null,null,3,0,0,null,null,null,null,1,null,null,null,null,0] },
+    
+    // 第十關修改：擴展區塊並將右側一二格設為直線
+    { name: "10", cols: 6, rows: 5, color: "#ffffff", hint: "終極挑戰：目標右側路徑已被修改為長距離直線通道。",
+      tiles: [
+        {t:"src",r:0,f:1}, {t:"line",r:1,f:0}, {t:"line",r:1,f:0}, {t:"line",r:1,f:0}, {t:"turn",r:0,f:0}, {t:"empty",r:0,f:0},
+        {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"line",r:1,f:0}, {t:"empty",r:0,f:0},
+        {t:"turn",r:0,f:0}, {t:"line",r:1,f:0}, {t:"turn",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"line",r:1,f:0}, {t:"empty",r:0,f:0},
+        {t:"line",r:0,f:0}, {t:"empty",r:0,f:0}, {t:"turn",r:0,f:0}, {t:"line",r:1,f:0}, {t:"turn",r:0,f:0}, {t:"empty",r:0,f:0},
+        {t:"turn",r:0,f:0}, {t:"line",r:1,f:0}, {t:"turn",r:0,f:0}, {t:"line",r:0,f:0}, {t:"line",r:0,f:0}, {t:"goal",r:0,f:0}
+      ], 
+      sol:[null,0,0,0,0,null,null,null,null,null,1,null,3,0,0,null,1,null,1,null,3,0,3,null,2,0,1,0,0,0] }
+  ];
 
-    function init() {
-        const grid = document.getElementById('grid');
-        grid.style.gridTemplateColumns = 'repeat(4, 80px)';
-        
-        level1.forEach((t, i) => {
-            const div = document.createElement('div');
-            div.className = 'tile';
-            div.style.transform = `rotate(${t.rot * 90}deg)`;
-            
-            // 繪製直線管道
-            div.innerHTML = `
-                <svg viewBox="0 0 80 80" style="width:100%;height:100%">
-                    <line x1="0" y1="40" x2="80" y2="40" class="pipe-line" />
-                    <line x1="0" y1="40" x2="80" y2="40" class="light-path" id="light-${i}" stroke="transparent" />
-                    ${t.type === 'source' ? '<circle cx="10" cy="40" r="8" fill="#ef4444"/>' : ''}
-                    ${t.type === 'target' ? '<circle cx="40" cy="40" r="15" fill="none" stroke="#ef4444" stroke-width="4"/>' : ''}
-                </svg>
-            `;
+  let lv = 0, state = [], moves = 0;
 
-            if(t.type === 'path') {
-                div.onclick = () => rotate(i);
-            }
-            
-            grid.appendChild(div);
-            gameState.push({ ...t, element: div });
-        });
-        update();
+  function init() {
+    const btnCt = document.getElementById("lvlBtns");
+    LEVELS.forEach((_, i) => {
+      const b = document.createElement("button");
+      b.className = "lvl-btn"; b.textContent = LEVELS[i].name;
+      b.onclick = () => loadLevel(i); btnCt.appendChild(b);
+    });
+    loadLevel(0);
+  }
+
+  function loadLevel(i) {
+    lv = i; moves = 0; state = LEVELS[i].tiles.map(t => ({...t}));
+    state.forEach(t => { if(!t.f && t.t !== "goal" && t.t !== "empty") t.r = Math.floor(Math.random()*4); });
+    document.querySelectorAll(".lvl-btn").forEach((b, j) => b.classList.toggle("on", j === i));
+    document.getElementById("hint").textContent = LEVELS[i].hint;
+    document.getElementById("moves").textContent = "旋轉次數: 0";
+    buildDirPanel(); draw();
+  }
+
+  function buildDirPanel() {
+    const grid = document.getElementById("dirGrid"); grid.innerHTML = "";
+    const gIdx = state.findIndex(x => x.t === "goal");
+    const curR = state[gIdx].r;
+    const btns = [ {d:-1, a:""}, {d:0, a:"↑"}, {d:-1, a:""}, {d:3, a:"←"}, {d:-1, a:""}, {d:1, a:"→"}, {d:-1, a:""}, {d:2, a:"↓"}, {d:-1, a:""} ];
+    btns.forEach(b => {
+      const btn = document.createElement("button"); btn.className = "dir-btn";
+      if (b.d === -1) { btn.classList.add("empty-cell"); } 
+      else { btn.textContent = b.a; if (b.d === curR) btn.classList.add("on"); btn.onclick = () => { state[gIdx].r = b.d; moves++; buildDirPanel(); draw(); }; }
+      grid.appendChild(btn);
+    });
+  }
+
+  function draw() {
+    const { cols, rows, color } = LEVELS[lv];
+    const cv = document.getElementById("board");
+    cv.width = cols * (T + G) - G + P * 2; cv.height = rows * (T + G) - G + P * 2;
+    const ctx = cv.getContext("2d");
+    const lit = propagate();
+    const gIdx = state.findIndex(x => x.t === "goal");
+    const won = lit[gIdx];
+
+    state.forEach((tile, i) => {
+      if (tile.t === "empty") return;
+      const x = P + (i % cols) * (T + G), y = P + Math.floor(i / cols) * (T + G);
+      const cx = x + T/2, cy = y + T/2;
+      ctx.fillStyle = tile.f ? "#020617" : "#1e293b";
+      ctx.beginPath(); ctx.roundRect(x, y, T, T, 8); ctx.fill();
+      const pColor = lit[i] ? color : "#475569";
+      const s = CONN[tile.t][tile.r % 4];
+      ctx.lineWidth = lit[i] ? 10 : 6; ctx.strokeStyle = pColor;
+      if(lit[i]) { ctx.shadowColor = color; ctx.shadowBlur = 15; }
+      [[cx, y], [x+T, cy], [cx, y+T], [x, cy]].forEach((p, d) => {
+        if (s[d]) { ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(p[0], p[1]); ctx.stroke(); }
+      });
+      ctx.beginPath(); ctx.arc(cx, cy, lit[i]?10:6, 0, Math.PI*2); ctx.fillStyle = pColor; ctx.fill();
+      ctx.shadowBlur = 0;
+      if (tile.t === "src") { ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(cx, cy, 18, 0, Math.PI*2); ctx.stroke(); }
+      if (tile.t === "goal") {
+        ctx.strokeStyle = pColor; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(cx, cy, 22, 0, Math.PI*2); ctx.stroke();
+        const ang = [1.5, 0, 0.5, 1][tile.r] * Math.PI;
+        ctx.fillStyle = pColor; ctx.beginPath(); ctx.moveTo(cx+Math.cos(ang)*15, cy+Math.sin(ang)*15);
+        ctx.lineTo(cx+Math.cos(ang-0.6)*8, cy+Math.sin(ang-0.6)*8); ctx.lineTo(cx+Math.cos(ang+0.6)*8, cy+Math.sin(ang+0.6)*8); ctx.fill();
+      }
+    });
+    document.getElementById("status").textContent = won ? "✓ 完成接通！" : "等待能量...";
+    document.getElementById("status").className = won ? "status win" : "status";
+    document.getElementById("moves").textContent = "旋轉次數: " + moves;
+  }
+
+  function propagate() {
+    const { cols } = LEVELS[lv];
+    const lit = new Array(state.length).fill(false);
+    const si = state.findIndex(x => x.t === "src");
+    if(si === -1) return lit;
+    lit[si] = true;
+    const q = [si];
+    while(q.length) {
+      const i = q.shift();
+      const r = Math.floor(i/cols), c = i%cols;
+      const s = CONN[state[i].t][state[i].r % 4];
+      const nbs = [r>0?i-cols:-1, c<cols-1?i+1:-1, r<LEVELS[lv].rows-1?i+cols:-1, c>0?i-1:-1];
+      nbs.forEach((ni, d) => {
+        if (ni !== -1 && s[d] && !lit[ni] && CONN[state[ni].t][state[ni].r % 4][(d+2)%4]) { lit[ni] = true; q.push(ni); }
+      });
     }
+    return lit;
+  }
 
-    function rotate(idx) {
-        gameState[idx].rot = (gameState[idx].rot + 1) % 4;
-        gameState[idx].element.style.transform = `rotate(${gameState[idx].rot * 90}deg)`;
-        update();
-    }
+  document.getElementById("board").onclick = (e) => {
+    const rect = e.target.getBoundingClientRect();
+    const c = Math.floor((e.clientX - rect.left - P) / (T + G)), r = Math.floor((e.clientY - rect.top - P) / (T + G));
+    const i = r * LEVELS[lv].cols + c;
+    if (state[i] && !state[i].f && state[i].t !== "empty" && state[i].t !== "goal") { state[i].r = (state[i].r + 1) % 4; moves++; draw(); }
+  };
 
-    function update() {
-        // 重置光效
-        gameState.forEach((_, i) => {
-            const l = document.getElementById(`light-${i}`);
-            if(l) l.setAttribute('stroke', 'transparent');
-        });
-
-        // 簡單邏輯檢測：如果所有方塊 rot 都是 1 (水平)，則通關
-        // 在這簡化版中，只要方塊1和2是水平的(rot 1 或 3)，光就傳得過去
-        let p1 = gameState[1].rot % 2 === 1;
-        let p2 = gameState[2].rot % 2 === 1;
-
-        if(p1) document.getElementById('light-1').setAttribute('stroke', COLORS.RED);
-        if(p1 && p2) {
-            document.getElementById('light-2').setAttribute('stroke', COLORS.RED);
-            document.getElementById('message').innerText = "太棒了！紅光成功接通！";
-        } else {
-            document.getElementById('message').innerText = "";
-        }
-    }
-
-    init();
+  function restart() { loadLevel(lv); }
+  function showSolve() { LEVELS[lv].sol.forEach((r, i) => { if (r !== null) state[i].r = r; }); buildDirPanel(); draw(); }
+  init();
 </script>
 </body>
 </html>
